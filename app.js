@@ -26,6 +26,8 @@ app.use(
       'http://localhost:7070',
       'http://127.0.0.1:3000',
       'http://localhost:3000',
+      'https://nodejs-tour-guid-git-master-farman-ullahs-projects.vercel.app',
+      'https://nodejs-tour-guid.vercel.app',
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],

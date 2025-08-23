@@ -56,27 +56,27 @@ const userSchema = new mongoose.Schema({
 })
 
 //these are the mongose midelware work for updateing the passwords so it will casse issue while creating or adding new user so whenever you try to add new uese stop them while creating new user
-// userSchema.pre('save', function (next) {
-//    if (!this.isModified('password') || this.isNew) return next()
-//    this.passwordChangedAt = Date.now();
-//    next()
-// })
+userSchema.pre('save', function (next) {
+   if (!this.isModified('password') || this.isNew) return next()
+   this.passwordChangedAt = Date.now();
+   next()
+})
 
-// userSchema.pre('save', async function (next) {
-//    //only run the funciton if the password  is modified
-//    if (!this.isModified('password')) return next()
-//    //this will hash the password & stor it into the db
-//    this.password = await bcrypt.hash(this.password, 12)
-//    //this will delete the passwordConform field
-//    this.passwordConfirm = undefined
-//    next()
-// })
+userSchema.pre('save', async function (next) {
+   //only run the funciton if the password  is modified
+   if (!this.isModified('password')) return next()
+   //this will hash the password & stor it into the db
+   this.password = await bcrypt.hash(this.password, 12)
+   //this will delete the passwordConform field
+   this.passwordConfirm = undefined
+   next()
+})
 
 
-// userSchema.pre(/^find/, function (next) {
-//    this.find({ active: true });
-//    next()
-// })
+userSchema.pre(/^find/, function (next) {
+   this.find({ active: true });
+   next()
+})
 
 // //instance method of ES6 is availbal on all doc to call and use
 userSchema.methods.correctPassword = async function (orignalPassword, userPassword) {

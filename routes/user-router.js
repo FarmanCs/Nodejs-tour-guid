@@ -23,6 +23,44 @@ userRouter.get('/debug', (req, res) => {
    })
 })
 
+// Create test user route
+userRouter.post('/create-test-user', async (req, res) => {
+   try {
+      const userModel = require('../models/user-model');
+      
+      // Check if user already exists
+      const existingUser = await userModel.findOne({ email: 'farmancs2024@gmail.com' });
+      if (existingUser) {
+         return res.json({ 
+            status: 'success', 
+            message: 'User already exists',
+            user: existingUser 
+         });
+      }
+      
+      // Create new test user
+      const testUser = await userModel.create({
+         name: 'Farman Test',
+         email: 'farmancs2024@gmail.com',
+         password: 'test1234',
+         passwordConfirm: 'test1234',
+         role: 'user'
+      });
+      
+      res.json({ 
+         status: 'success', 
+         message: 'Test user created successfully',
+         user: testUser 
+      });
+   } catch (error) {
+      console.error('Error creating test user:', error);
+      res.status(500).json({ 
+         status: 'error', 
+         message: error.message 
+      });
+   }
+})
+
 //authentication protect middleware protect all middelware  below this
 userRouter.use(userAuth.protect)
 

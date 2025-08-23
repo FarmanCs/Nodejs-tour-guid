@@ -5,13 +5,22 @@ const tryCatchError = require('../utils/async-error')
 const AppError = require("../utils/error")
 
 exports.getOverview = tryCatchError(async (req, res, next) => {
-   // 1 get tour data from the collection
-   const tours = await tourModel.find()
-   // 2 render the templete using tour data above
-   res.status(200).render('overview', {
-      title: "All Tours",
-      tours
-   })
+   try {
+      // 1 get tour data from the collection
+      const tours = await tourModel.find()
+      // 2 render the templete using tour data above
+      res.status(200).render('overview', {
+         title: "All Tours",
+         tours
+      })
+   } catch (error) {
+      console.error('Database error in getOverview:', error);
+      // If database is not available, render with empty tours array
+      res.status(200).render('overview', {
+         title: "All Tours",
+         tours: []
+      })
+   }
 })
 
 exports.getTour = tryCatchError(async (req, res, next) => {

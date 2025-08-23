@@ -19,13 +19,18 @@ if (process.env.MONGO_URL) {
   );
 
   mongoose
-    .connect(DB)
+    .connect(DB, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
     .then(() => {
       console.log('Database connected');
     })
     .catch((err) => {
       console.log('Database connection error:', err);
     });
+} else {
+  console.log('MONGO_URL not found in environment variables');
 }
 
 // For Vercel serverless deployment

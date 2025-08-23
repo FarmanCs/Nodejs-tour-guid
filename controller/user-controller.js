@@ -41,17 +41,19 @@ exports.resizeUserPhoto = tryCatchError(async (req, res, next) => {
    try {
       req.file.filename = `user-${req.user.id}-${Date.now()}.jpeg`
       
-      // In production/serverless environment, skip file writing to filesystem
+      // In production/serverless environment, convert to base64
       if (process.env.NODE_ENV === 'production') {
-         // Just resize the image in memory and store the buffer
+         // Resize the image in memory and convert to base64
          const resizedBuffer = await sharp(req.file.buffer)
             .resize(500, 500)
             .toFormat('jpeg')
             .jpeg({ quality: 90 })
             .toBuffer()
          
-         req.file.buffer = resizedBuffer
-         console.log('Image resized in memory for production environment');
+         // Convert to base64 for storage
+         const base64Image = `data:image/jpeg;base64,${resizedBuffer.toString('base64')}`
+         req.file.base64 = base64Image
+         console.log('Image converted to base64 for production environment');
       } else {
          // In development, write to filesystem
          await sharp(req.file.buffer)
@@ -106,10 +108,9 @@ exports.updateMe = tryCatchError(async (req, res, next) => {
    // 3 handle photo upload
    if (req.file) {
       if (process.env.NODE_ENV === 'production') {
-         // In production, we can't save files to filesystem
-         // For now, just use a default photo or skip photo update
-         console.log('Photo upload in production - using default photo');
-         filteredBody.photo = 'default.jpg'; // Use default photo
+         // In production, store base64 image in database
+         console.log('Photo upload in production - storing base64 image');
+         filteredBody.photo = req.file.base64; // Store base64 image
       } else {
          // In development, use the filename
          filteredBody.photo = req.file.filename;

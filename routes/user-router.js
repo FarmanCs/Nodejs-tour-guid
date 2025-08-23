@@ -1,5 +1,6 @@
 const express = require('express');
 const multer = require('multer');
+const path = require('path');
 const userController = require('../controller/user-controller');
 const userAuth = require('../controller/auth-controller');
 
@@ -25,43 +26,69 @@ userRouter.get('/debug', (req, res) => {
 
 // Create test user route
 userRouter.post('/create-test-user', async (req, res) => {
-  try {
-    const userModel = require('../models/user-model');
+   try {
+     const userModel = require('../models/user-model');
 
-    // Check if user already exists
-    const existingUser = await userModel.findOne({
-      email: 'farmancs2024@gmail.com',
-    });
-    if (existingUser) {
-      return res.json({
-        status: 'success',
-        message: 'User already exists',
-        user: existingUser,
-      });
-    }
+     // Check if user already exists
+     const existingUser = await userModel.findOne({
+       email: 'farmancs2024@gmail.com',
+     });
+     if (existingUser) {
+       return res.json({
+         status: 'success',
+         message: 'User already exists',
+         user: existingUser,
+       });
+     }
 
-    // Create new test user
-    const testUser = await userModel.create({
-      name: 'Farman Test',
-      email: 'farmancs2024@gmail.com',
-      password: 'test1234',
-      passwordConfirm: 'test1234',
-      role: 'user',
-    });
+     // Create new test user
+     const testUser = await userModel.create({
+       name: 'Farman Test',
+       email: 'farmancs2024@gmail.com',
+       password: 'test1234',
+       passwordConfirm: 'test1234',
+       role: 'user',
+     });
 
-    res.json({
-      status: 'success',
-      message: 'Test user created successfully',
-      user: testUser,
-    });
-  } catch (error) {
-    console.error('Error creating test user:', error);
-    res.status(500).json({
-      status: 'error',
-      message: error.message,
-    });
-  }
-});
+     res.json({
+       status: 'success',
+       message: 'Test user created successfully',
+       user: testUser,
+     });
+   } catch (error) {
+     console.error('Error creating test user:', error);
+     res.status(500).json({
+       status: 'error',
+       message: error.message,
+     });
+   }
+ })
+
+// Serve user photo route
+userRouter.get('/photo/:userId', async (req, res) => {
+   try {
+     const userModel = require('../models/user-model');
+     const user = await userModel.findById(req.params.userId);
+     
+     if (!user) {
+       return res.status(404).json({ error: 'User not found' });
+     }
+     
+     // If photo is base64, serve it directly
+     if (user.photo && user.photo.startsWith('data:image')) {
+       res.set('Content-Type', 'image/jpeg');
+       const base64Data = user.photo.replace(/^data:image\/\w+;base64,/, '');
+       const buffer = Buffer.from(base64Data, 'base64');
+       res.send(buffer);
+     } else {
+       // If it's a filename, serve from static files
+       res.sendFile(path.join(__dirname, '../public/img/users', user.photo || 'default.jpg'));
+     }
+   } catch (error) {
+     console.error('Error serving user photo:', error);
+     res.status(500).json({ error: 'Error serving photo' });
+   }
+ });
 
 //authentication protect middleware protect all middelware  below this
 userRouter.use(userAuth.protect);

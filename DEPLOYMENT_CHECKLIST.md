@@ -148,7 +148,7 @@ GMAIL_PASSWORD=your-16-digit-app-password
 EMAIL_FROM=noreply@natours.com
 
 # Stripe
-STRIPE_SECRET_KEY=sk_test_51ABC123DEF456GHI789JKL012MNO345PQR678STU901VWX234YZA567BCD890EFG
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
 
 # Optional

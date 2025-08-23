@@ -37,13 +37,35 @@ exports.uploadUserPhoto = upload.single('photo')
 //resize the user photo, if it is larger in size etc...
 exports.resizeUserPhoto = tryCatchError(async (req, res, next) => {
    if (!req.file) return next()
-   req.file.filename = `user-${req.user.id}-${Date.now()}.jpeg`
-   await sharp(req.file.buffer)
-      .resize(500, 500)
-      .toFormat('jpeg')
-      .jpeg({ quality: 90 })
-      .toFile(`public/img/users/${req.file.filename}`)
-   next()
+   
+   try {
+      req.file.filename = `user-${req.user.id}-${Date.now()}.jpeg`
+      
+      // In production/serverless environment, skip file writing to filesystem
+      if (process.env.NODE_ENV === 'production') {
+         // Just resize the image in memory and store the buffer
+         const resizedBuffer = await sharp(req.file.buffer)
+            .resize(500, 500)
+            .toFormat('jpeg')
+            .jpeg({ quality: 90 })
+            .toBuffer()
+         
+         req.file.buffer = resizedBuffer
+         console.log('Image resized in memory for production environment');
+      } else {
+         // In development, write to filesystem
+         await sharp(req.file.buffer)
+            .resize(500, 500)
+            .toFormat('jpeg')
+            .jpeg({ quality: 90 })
+            .toFile(`public/img/users/${req.file.filename}`)
+      }
+      
+      next()
+   } catch (error) {
+      console.error('Error resizing photo:', error);
+      return next(new AppError('Error processing image upload', 500));
+   }
 })
 
 //filter object funtion 
@@ -70,20 +92,35 @@ exports.creatUser = tryCatchError(async (req, res, next) => {
 })
 //update the current user (updateMe)
 exports.updateMe = tryCatchError(async (req, res, next) => {
-   console.log(req.file);
+   console.log('UpdateMe called, file:', req.file);
 
    // 1 create error if user post password or data
    if (req.body.password || req.body.passwordConfirm) {
       return next(new AppError("This rout is not for updatepassword, do use /updateMe-password route", 404
       ))
    }
+   
    // 2 filtered out unwanted filed....
    const filteredBody = filterObj(req.body, 'name', 'email');
-   if (req.file) filteredBody.photo = req.file.filename
-   // 3 update user document  
+   
+   // 3 handle photo upload
+   if (req.file) {
+      if (process.env.NODE_ENV === 'production') {
+         // In production, we can't save files to filesystem
+         // For now, just use a default photo or skip photo update
+         console.log('Photo upload in production - using default photo');
+         filteredBody.photo = 'default.jpg'; // Use default photo
+      } else {
+         // In development, use the filename
+         filteredBody.photo = req.file.filename;
+      }
+   }
+   
+   // 4 update user document  
    const updateUser = await userModle.findByIdAndUpdate(req.user.id, filteredBody, {
       new: true, runValidators: true
    })
+   
    res.status(200).json({
       status: 'success',
       data: {

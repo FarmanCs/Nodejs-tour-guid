@@ -21,7 +21,12 @@ const app = express();
 //one of the most important middlewar use to allow crose port requests
 app.use(
   cors({
-    origin: ['http://127.0.0.1:7070'],
+    origin: [
+      'http://127.0.0.1:7070',
+      'http://localhost:7070',
+      'http://127.0.0.1:3000',
+      'http://localhost:3000',
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

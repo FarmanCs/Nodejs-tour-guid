@@ -30,7 +30,7 @@ if (process.env.MONGO_URL) {
 
 // For Vercel serverless deployment
 if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.PORT || 7070;
   app.listen(PORT, () => {
     console.log(`Server starting listening at port http://127.0.0.1:${PORT} `);
   });

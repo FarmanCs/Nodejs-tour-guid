@@ -9,31 +9,39 @@ const Email = require('../utils/send-email')
 
 //sign token function
 const signToken = id => {
+   if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET environment variable is not set');
+   }
    return jwt.sign({ id }, process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRE_IN })
+      { expiresIn: process.env.JWT_EXPIRE_IN || '90d' })
 }
 //creat a function for sent token to clint or user
 const creatSendToken = (user, statusCode, res) => {
-   const token = signToken(user._id)
-   const expirationTime = parseInt(process.env.JWT_COOKIE_EXPIRE_IN, 10)
+   try {
+      const token = signToken(user._id)
+      const expirationTime = parseInt(process.env.JWT_COOKIE_EXPIRE_IN, 10) || 90
 
-   const cookieOptions = {
-      expires: new Date(Date.now() + expirationTime * 24 * 60 * 60 * 1000),
-      httpOnly: true,
-      sameSite: 'lax',   //  Safer for localhost
-      secure: false      // Only set to true in production
-   };
-   if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+      const cookieOptions = {
+         expires: new Date(Date.now() + expirationTime * 24 * 60 * 60 * 1000),
+         httpOnly: true,
+         sameSite: 'lax',   //  Safer for localhost
+         secure: false      // Only set to true in production
+      };
+      if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
 
-   //sending cookie
-   res.cookie('jwt', token, cookieOptions)
-   //this will hide the password from the user response
-   user.password = undefined
-   res.status(statusCode).json({
-      status: 'success',
-      token,
-      user
-   })
+      //sending cookie
+      res.cookie('jwt', token, cookieOptions)
+      //this will hide the password from the user response
+      user.password = undefined
+      res.status(statusCode).json({
+         status: 'success',
+         token,
+         user
+      })
+   } catch (error) {
+      console.error('Error in creatSendToken:', error);
+      throw new Error('Failed to create authentication token');
+   }
 }
 //singup or create new user
 exports.singup = tryCatchError(async (req, res) => {
@@ -48,22 +56,35 @@ exports.singup = tryCatchError(async (req, res) => {
 
 //log in controller 
 exports.login = tryCatchError(async (req, res, next) => {
-   // 1) cheeck the email and password is correct or not or prestent or not
-   const { email, password } = req.body
-   // console.log(`Email is : ${email} while the password is ${password}`);
+   try {
+      // 1) cheeck the email and password is correct or not or prestent or not
+      const { email, password } = req.body
+      console.log(`Login attempt for email: ${email}`);
 
-   if (!email || !password) {
-      return next(new AppError("please provide the email and password", 400))
+      if (!email || !password) {
+         return next(new AppError("please provide the email and password", 400))
+      }
+      
+      // 2) check the use with this email is present in db or not & the passowrd ok
+      const user = await userModel.findOne({ email }).select('+password')
+      
+      if (!user) {
+         console.log('User not found in database');
+         return next(new AppError("Incorrect password or email", 401))
+      }
+      
+      const isPasswordCorrect = await user.correctPassword(password, user.password)
+      if (!isPasswordCorrect) {
+         console.log('Password incorrect');
+         return next(new AppError("Incorrect password or email", 401))
+      }
+      
+      // 3) sen the token to the clinet and login message...
+      creatSendToken(user, 200, res)
+   } catch (error) {
+      console.error('Login error:', error);
+      return next(new AppError("Database connection error. Please try again later.", 500))
    }
-   // 2) check the use with this email is present in db or not & the passowrd ok
-   const user = await userModel.findOne({ email }).select('+password')
-   // email.toLowerCase()
-   //this will work the same as above 
-   if (!user || !(await user.correctPassword(password, user.password))) {
-      return next(new AppError("Incorect passowrd or email", 401))
-   }
-   // 3) sen the token to the clinet and login message...
-   creatSendToken(user, 200, res)
 })
 
 //Logged out 

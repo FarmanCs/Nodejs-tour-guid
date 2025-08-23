@@ -11,6 +11,18 @@ userRouter.get('/logout', userAuth.logout)
 userRouter.post('/forgot-Password', userAuth.forgotPassword)
 userRouter.patch('/reset-Password/:token', userAuth.resetPassword)
 
+// Debug route to check environment variables
+userRouter.get('/debug', (req, res) => {
+   res.json({
+      hasMongoUrl: !!process.env.MONGO_URL,
+      hasJwtSecret: !!process.env.JWT_SECRET,
+      hasJwtExpireIn: !!process.env.JWT_EXPIRE_IN,
+      hasJwtCookieExpireIn: !!process.env.JWT_COOKIE_EXPIRE_IN,
+      nodeEnv: process.env.NODE_ENV,
+      vercel: process.env.VERCEL
+   })
+})
+
 //authentication protect middleware protect all middelware  below this
 userRouter.use(userAuth.protect)
 

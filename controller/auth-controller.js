@@ -45,6 +45,7 @@ const creatSendToken = (user, statusCode, res) => {
 }
 //singup or create new user
 exports.singup = tryCatchError(async (req, res) => {
+
    const newUser = await userModel.create(req.body)
    const url = `${req.protocol}://${req.get('host')}/me`
    console.log(url);
@@ -64,21 +65,21 @@ exports.login = tryCatchError(async (req, res, next) => {
       if (!email || !password) {
          return next(new AppError("please provide the email and password", 400))
       }
-      
+
       // 2) check the use with this email is present in db or not & the passowrd ok
       const user = await userModel.findOne({ email }).select('+password')
-      
+
       if (!user) {
          console.log('User not found in database');
          return next(new AppError("Incorrect password or email", 401))
       }
-      
+
       const isPasswordCorrect = await user.correctPassword(password, user.password)
       if (!isPasswordCorrect) {
          console.log('Password incorrect');
          return next(new AppError("Incorrect password or email", 401))
       }
-      
+
       // 3) sen the token to the clinet and login message...
       creatSendToken(user, 200, res)
    } catch (error) {

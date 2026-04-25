@@ -26,6 +26,8 @@ exports.updateOne = Model => tryCatchError(async (req, res) => {
 exports.createOne = Model => tryCatchError(async (req, res) => {
    // const doc = await Model.create(req.body)
    let doc = new Model(req.body)
+   console.log("Doc:", doc)
+   debugger;
    doc = await doc.save()
    res.status(201).json({
       status: 'Doc created successfully...',

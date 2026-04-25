@@ -85,7 +85,7 @@ const tourSchema = new mongoose.Schema({
          default: 'Point',
          enum: ['Point']
       },
-      coordinates: [Number],
+      coordinates: [Number],  // [longitude, latitude]
       address: String,
       description: String
    },
@@ -96,7 +96,7 @@ const tourSchema = new mongoose.Schema({
             default: "Point",
             enum: ["Point"]
          },
-         coordinates: [String],
+         coordinates: [Number],  // Changed from [String] to [Number]
          address: String,
          description: String,
          day: Number
@@ -122,7 +122,8 @@ const tourSchema = new mongoose.Schema({
 //make an index on price
 tourSchema.index({ price: 1, ratingsAverage: -1 })
 tourSchema.index({ slug: 1 })
-tourSchema.index({ startLocation: '2dsphere' })
+// IMPORTANT: Only enable this if startLocation has coordinates
+// tourSchema.index({ startLocation: '2dsphere' })
 
 tourSchema.virtual('durationWeeks').get(function () {
    return this.duration / 7
@@ -133,12 +134,6 @@ tourSchema.virtual('reviews', {
    foreignField: 'tour',
    localField: '_id'
 })
-// save doc and responsible for embeding user into tourmodel for ER
-// tourSchema.pre('save', async function (next) {
-//    const tourguide = this.guides.map(async id => await userModel.findById(id))
-//    this.guides = await Promise.all(tourguide)
-//    next()
-// })
 
 //document middleware  run before save() and .create()
 tourSchema.pre('save', function (next) {
@@ -146,13 +141,10 @@ tourSchema.pre('save', function (next) {
    next()
 })
 
-
-
 tourSchema.pre(/^find/, function (next) {
    this.populate({ path: "guides", select: '-__v' })
    next()
 })
-
 
 // query middleware....
 tourSchema.pre(/^find/, function (next) {
@@ -165,17 +157,6 @@ tourSchema.post(/^find/, function (doc, next) {
    console.log(`query took ${Date.now() - this.start} second`);
    next()
 })
-
-
-// AGREGATION MIDDELWARE
-// tourSchema.pre('aggregate', function (next) {
-//    // console.log(this.pipeline());
-//    // this.pipeline().unshift({ $match: { secretTour: true } })
-//    console.log(this.pipeline());
-//    next()
-// })
-
-
 
 //make a model for tourSchema 
 const Tour = mongoose.model('Tour', tourSchema)
